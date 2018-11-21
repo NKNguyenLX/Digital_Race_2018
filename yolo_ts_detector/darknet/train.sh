@@ -1,0 +1,1 @@
+./darknet detector train trafficsign/ts.data trafficsign/ts.cfg darknet19_448.conv.23

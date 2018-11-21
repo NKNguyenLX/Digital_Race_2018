@@ -1,0 +1,3 @@
+﻿<launch>
+     <node name="yolo_ts_detector" pkg="yolo_ts_detector" type="yolo_ts_detector_node" output="screen" />
+</launch>

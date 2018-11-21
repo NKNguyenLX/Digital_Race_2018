@@ -1,0 +1,5 @@
+classes= 2 
+train  = trafficsign/train.txt  
+valid  = trafficsign/test.txt  
+names  = /home/nknight/catkin_ws/src/yolo_ts_detector/darknet/trafficsign/ts.names  
+backup = backup/
