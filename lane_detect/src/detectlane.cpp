@@ -304,16 +304,19 @@ void DetectLane::detectLeftRight(const vector<vector<Point> > &points)
         max2--;
     }
     
-    vector<Point> subLane1(lane1.begin(), lane1.begin() + 5);
-    vector<Point> subLane2(lane2.begin(), lane2.begin() + 5);
+    // vector<Point> subLane1(lane1.begin(), lane1.begin() + 3);
+    // vector<Point> subLane2(lane2.begin(), lane2.begin() + 3);
+
+    vector<Point> subLane1(lane1.end() -5, lane1.end());
+    vector<Point> subLane2(lane2.end() -5, lane2.end());
 
     Vec4f line1, line2;
 
     fitLine(subLane1, line1, 2, 0, 0.01, 0.01);
     fitLine(subLane2, line2, 2, 0, 0.01, 0.01);
 
-    int lane1X = (BIRDVIEW_WIDTH - line1[3]) * line1[0] / line1[1] + line1[2];
-    int lane2X = (BIRDVIEW_WIDTH - line2[3]) * line2[0] / line2[1] + line2[2];
+    int lane1X = (BIRDVIEW_HEIGHT - line1[3]) * line1[0] / line1[1] + line1[2];
+    int lane2X = (BIRDVIEW_HEIGHT - line2[3]) * line2[0] / line2[1] + line2[2];
 
     if (lane1X < lane2X)
     {

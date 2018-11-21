@@ -23,6 +23,11 @@ float CarControl::errorAngle(const Point &dst)
 
 void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right, float velocity)
 {
+    std_msgs::Float32 angle;
+    std_msgs::Float32 speed;
+
+    speed.data = velocity;
+
     int i = left.size() - 11;
     float error = preError;
     // while (left[i] == DetectLane::null && right[i] == DetectLane::null) {
@@ -48,13 +53,19 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     }
     if (left[i] != DetectLane::null && right[i] !=  DetectLane::null)
     {
-        if(sign_signal.sign == 0 && sign_signal.prob > 0.6)
+        if(sign_signal.sign == 0)
         {
+            ROS_INFO("sign signal: %d",sign_signal.sign);
+            //error = errorAngle(left[i]);
             error = errorAngle(left[i] + Point(laneWidth / 2, 0));
+            speed.data = 30;
         }
-        else if(sign_signal.sign == 1 && sign_signal.prob > 0.6)
+        else if(sign_signal.sign == 1)
         {
+            ROS_INFO("sign signal: %d",sign_signal.sign);
+            //error = errorAngle(right[i]);
             error = errorAngle(right[i] - Point(laneWidth / 2, 0));
+            speed.data = 30;      
         }
         else 
             error = errorAngle(right[i] - Point(laneWidth / 2, 0));
@@ -68,11 +79,7 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
         error = errorAngle(right[i] - Point(laneWidth / 2, 0));
     }    
 
-    std_msgs::Float32 angle;
-    std_msgs::Float32 speed;
-
     angle.data = error;
-    speed.data = velocity;
 
     steer_publisher.publish(angle);
     speed_publisher.publish(speed);    

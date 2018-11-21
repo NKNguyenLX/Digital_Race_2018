@@ -1,3 +1,4 @@
 ﻿<launch>
-     <node name="yolo_ts_detector" pkg="yolo_ts_detector" type="yolo_ts_detector_node" output="screen" />
+     <node name="yolo_ts_detector" pkg="yolo_ts_detector" type="yolo_ts_detector_node" output="screen"  args="_image_transport:=compressed"/>
+     <!-- <node name="yolo_ts_detector" pkg="yolo_ts_detector" type="yolo_ts_detector_node" output="screen"  args="_image_transport:=raw"/> -->
 </launch>
