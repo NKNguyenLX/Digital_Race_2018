@@ -303,12 +303,9 @@ void DetectLane::detectLeftRight(const vector<vector<Point> > &points)
         
         max2--;
     }
-    
-    // vector<Point> subLane1(lane1.begin(), lane1.begin() + 3);
-    // vector<Point> subLane2(lane2.begin(), lane2.begin() + 3);
 
-    vector<Point> subLane1(lane1.end() -5, lane1.end());
-    vector<Point> subLane2(lane2.end() -5, lane2.end());
+    vector<Point> subLane1(lane1.end() - 5, lane1.end());
+    vector<Point> subLane2(lane2.end() - 5, lane2.end());
 
     Vec4f line1, line2;
 
