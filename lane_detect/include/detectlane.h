@@ -56,7 +56,7 @@ private:
     int skyLine = 100;
     int shadowParam = 40;
     int img_trap = 0;
-    int laneMinHeight = 100;
+    int laneMinHeight = 150;
 
     vector<Point> leftLane, rightLane;
 };
