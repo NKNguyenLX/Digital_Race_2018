@@ -53,8 +53,10 @@ private:
     int maxLaneInShadow[3] = {120, 80, 171};
     int binaryThreshold = 180;
 
-    int skyLine = 85;
+    int skyLine = 100;
     int shadowParam = 40;
+    int img_trap = 0;
+    int laneMinHeight = 100;
 
     vector<Point> leftLane, rightLane;
 };

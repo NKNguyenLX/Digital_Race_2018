@@ -1,4 +1,6 @@
 #include "detectlane.h"
+#include <stdio.h>
+#include <math.h>
 
 int min(int a, int b)
 {
@@ -13,16 +15,16 @@ int DetectLane::HORIZONTAL = 1;
 Point DetectLane::null = Point();
 
 DetectLane::DetectLane() {
-    cvCreateTrackbar("LowH", "Threshold", &minThreshold[0], 179);
-    cvCreateTrackbar("HighH", "Threshold", &maxThreshold[0], 179);
+    cv::createTrackbar("LowH", "Threshold", &minThreshold[0], 179);
+    cv::createTrackbar("HighH", "Threshold", &maxThreshold[0], 179);
 
-    cvCreateTrackbar("LowS", "Threshold", &minThreshold[1], 255);
-    cvCreateTrackbar("HighS", "Threshold", &maxThreshold[1], 255);
+    cv::createTrackbar("LowS", "Threshold", &minThreshold[1], 255);
+    cv::createTrackbar("HighS", "Threshold", &maxThreshold[1], 255);
 
-    cvCreateTrackbar("LowV", "Threshold", &minThreshold[2], 255);
-    cvCreateTrackbar("HighV", "Threshold", &maxThreshold[2], 255);
+    cv::createTrackbar("LowV", "Threshold", &minThreshold[2], 255);
+    cv::createTrackbar("HighV", "Threshold", &maxThreshold[2], 255);
 
-    cvCreateTrackbar("Shadow Param", "Threshold", &shadowParam, 255);
+    cv::createTrackbar("Shadow Param", "Threshold", &shadowParam, 255);
 }
 
 DetectLane::~DetectLane(){}
@@ -43,8 +45,8 @@ void DetectLane::update(const Mat &src)
     
     vector<Mat> layers1 = splitLayer(img);
     vector<vector<Point> > points1 = centerRoadSide(layers1);
-    // vector<Mat> layers2 = splitLayer(img, HORIZONTAL);
-    // vector<vector<Point> > points2 = centerRoadSide(layers2, HORIZONTAL);
+    vector<Mat> layers2 = splitLayer(img, HORIZONTAL);
+    vector<vector<Point> > points2 = centerRoadSide(layers2, HORIZONTAL);
 
     detectLeftRight(points1);
 
@@ -60,15 +62,15 @@ void DetectLane::update(const Mat &src)
         }
     }
 
-    // for (int i = 0; i < points2.size(); i++)
-    //  {
-    //     for (int j = 0; j < points2[i].size(); j++)
-    //     {
-    //         circle(birdView, points2[i][j], 1, Scalar(0,255,0), 2, 8, 0 );
-    //     }
-    // }
+    for (int i = 0; i < points2.size(); i++)
+     {
+        for (int j = 0; j < points2[i].size(); j++)
+        {
+            circle(birdView, points2[i][j], 1, Scalar(0,255,0), 2, 8, 0 );
+        }
+    }
 
-    // imshow("Debug", birdView);
+    imshow("Debug", birdView);
 
     for (int i = 1; i < leftLane.size(); i++)
     {
@@ -88,17 +90,41 @@ void DetectLane::update(const Mat &src)
     imshow("Lane Detect", lane);
 }
 
+// float DetectLane::ffunction(float src, float alpha, float beta, float gamma)
+// {
+//     return 1 / (1+ exp(-alpha*(1 - pow(src,(1/gamma)) - beta)));
+// }
+
 Mat DetectLane::preProcess(const Mat &src)
 {
-    Mat imgThresholded, imgHSV, dst;
-
+    Mat imgThresholded, imgHSV, dst, laneShadow, lanesImage;
+    uint32_t totalV=0, averageV =0, maxV=0;
     cvtColor(src, imgHSV, COLOR_BGR2HSV);
 
+    // printf("width, height: %d %d", src.cols, src.rows);
+
+    for(int i=0;i < src.rows; i++)
+        for(int j=0; j< src.cols; j++)
+        {
+            totalV += imgHSV.at<Vec3b>(i,j)[2];
+            if(imgHSV.at<Vec3b>(i,j)[2] > maxV)
+                maxV = imgHSV.at<Vec3b>(i,j)[2];
+        }
+
+    averageV = int(totalV / (src.rows*src.cols));
+    
     inRange(imgHSV, Scalar(minThreshold[0], minThreshold[1], minThreshold[2]), 
         Scalar(maxThreshold[0], maxThreshold[1], maxThreshold[2]), 
         imgThresholded);
 
-    dst = birdViewTranform(imgThresholded);
+    // detect shadow
+    laneShadow = laneInShadow(src);
+    imshow("Lane in shadow", laneShadow);
+
+    bitwise_or(imgThresholded, laneShadow, lanesImage);
+    imshow("Lanes Image", lanesImage);
+
+    dst = birdViewTranform(lanesImage);
 
     imshow("Bird View", dst);
 
@@ -303,6 +329,24 @@ void DetectLane::detectLeftRight(const vector<vector<Point> > &points)
         
         max2--;
     }
+    
+    // Check vaild lane
+    if(lane1[lane1.size()-1].y < laneMinHeight)
+    {
+        for (int i = 0; i < lane1.size(); i++)
+        {
+            lane1[i] = DetectLane::null;
+        }
+    }
+
+    if(lane2[lane2.size()-1].y < laneMinHeight)
+    {
+        for (int i = 0; i < lane2.size(); i++)
+        {
+            lane2[i] = DetectLane::null;
+        }
+    }
+
 
     vector<Point> subLane1(lane1.end() - 5, lane1.end());
     vector<Point> subLane2(lane2.end() - 5, lane2.end());
@@ -315,7 +359,43 @@ void DetectLane::detectLeftRight(const vector<vector<Point> > &points)
     int lane1X = (BIRDVIEW_HEIGHT - line1[3]) * line1[0] / line1[1] + line1[2];
     int lane2X = (BIRDVIEW_HEIGHT - line2[3]) * line2[0] / line2[1] + line2[2];
 
-    if (lane1X < lane2X)
+    // if (lane1X < BIRDVIEW_WIDTH/2)
+    // {
+    //     for (int i = 0; i < lane1.size(); i++)
+    //     {
+    //         leftLane[floor(lane1[i].y / slideThickness)] = lane1[i];
+    //     }
+    //     for (int i = 0; i < lane2.size(); i++)
+    //     {
+    //         rightLane[floor(lane2[i].y / slideThickness)] = lane2[i];
+    //     }
+    // }
+    // else 
+    // {
+    //     for (int i = 0; i < lane2.size(); i++)
+    //     {
+    //         leftLane[floor(lane2[i].y / slideThickness)] = lane2[i];
+    //     }
+    //     for (int i = 0; i < lane1.size(); i++)
+    //     {
+    //         rightLane[floor(lane1[i].y / slideThickness)] = lane1[i];
+    //     }
+    // }
+
+    // int null_1=0; 
+    // int null_2=0;
+    // for (int i = 0; i < lane1.size(); i++)
+    // {
+    //     if(lane1[i] == DetectLane::null)
+    //         null_1 ++;
+    // }
+    // for (int i = 0; i < lane2.size(); i++)
+    // {
+    //     if(lane2[i] == DetectLane::null)
+    //         null_2 ++;
+    // }
+
+    if (lane1X < BIRDVIEW_WIDTH/2)
     {
         for (int i = 0; i < lane1.size(); i++)
         {
@@ -326,7 +406,7 @@ void DetectLane::detectLeftRight(const vector<vector<Point> > &points)
             rightLane[floor(lane2[i].y / slideThickness)] = lane2[i];
         }
     }
-    else
+    else 
     {
         for (int i = 0; i < lane2.size(); i++)
         {
@@ -367,16 +447,16 @@ Mat DetectLane::birdViewTranform(const Mat &src)
     int width = src.size().width;
     int height = src.size().height;
 
-    src_vertices[0] = Point(0, skyLine);
-    src_vertices[1] = Point(width, skyLine);
+    src_vertices[0] = Point(img_trap, skyLine);
+    src_vertices[1] = Point(width - img_trap, skyLine);
     src_vertices[2] = Point(width, height);
     src_vertices[3] = Point(0, height);
 
     Point2f dst_vertices[4];
     dst_vertices[0] = Point(0, 0);
     dst_vertices[1] = Point(BIRDVIEW_WIDTH, 0);
-    dst_vertices[2] = Point(BIRDVIEW_WIDTH - 105, BIRDVIEW_HEIGHT);
-    dst_vertices[3] = Point(105, BIRDVIEW_HEIGHT);
+    dst_vertices[2] = Point(BIRDVIEW_WIDTH - 105 + 10, BIRDVIEW_HEIGHT);
+    dst_vertices[3] = Point(105 - 10, BIRDVIEW_HEIGHT);
 
     Mat M = getPerspectiveTransform(src_vertices, dst_vertices);
 
@@ -385,4 +465,5 @@ Mat DetectLane::birdViewTranform(const Mat &src)
 
     return dst;
 }
+
 

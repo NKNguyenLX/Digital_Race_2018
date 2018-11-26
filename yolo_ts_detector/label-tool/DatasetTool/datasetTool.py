@@ -12,8 +12,7 @@ ap.add_argument("-v", "--video",required=True,
 args = vars(ap.parse_args())
 
 camera = cv2.VideoCapture(args["video"])
-count_left = 0
-count_right = 0
+count = 100
 left_path = "dataset/0/"
 right_path = "dataset/1/"
 while True:
@@ -26,12 +25,12 @@ while True:
     cv2.imshow("features", frame)
     save = cv2.waitKey(0)
 
-    if save == 27:
-        cv2.imwrite(left_path + str(count_left) + "l.jpg",frame)
-        count_left = count_left + 1
-        print "Left image: " + str(count_left)
+    if save == ord('l'):
+        cv2.imwrite(left_path + str(count) + ".jpg",frame)
+        count = count + 1
+        print "Left image: " + str(count)
 
-    if save == 32:
-        cv2.imwrite(right_path + str(count_right) + "r.jpg",frame)
-        count_right = count_right + 1
-        print "Right image: " + str(count_right)
+    if save == ord('r'):
+        cv2.imwrite(right_path + str(count) + ".jpg",frame)
+        count = count + 1
+        print "Right image: " + str(count)

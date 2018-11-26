@@ -49,7 +49,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         cv::imshow("View", cv_ptr->image);
 	waitKey(1);
         detect->update(cv_ptr->image);
-        car->driverCar(detect->getLeftLane(), detect->getRightLane(), 50);
+        car->driverCar(detect->getLeftLane(), detect->getRightLane(), 60);
     }
     catch (cv_bridge::Exception& e)
     {
