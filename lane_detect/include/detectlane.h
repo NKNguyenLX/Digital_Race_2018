@@ -9,6 +9,7 @@
 #include <vector>
 #include <math.h>
 #include <algorithm>
+#include "define.h"
 
 using namespace std;
 using namespace cv;

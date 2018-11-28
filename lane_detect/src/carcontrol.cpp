@@ -1,5 +1,6 @@
 #include "carcontrol.h"
 
+
 CarControl::CarControl()
 {
     carPos.x = 120;
@@ -66,7 +67,7 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
 
     // Set initial speed
     // speed.data = velocity;
-    speed.data = 60;
+    speed.data = INIT_SPEED;
 
     int i = left.size() - 11;
     float error = preError;
@@ -91,28 +92,28 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     } 
 
     // Lane state
-    if(sign_signal.sign == 0)
+    if(sign_signal.sign == LEFT_SIGN)
     {
-        laneStatus = 0;
+        laneStatus = LEFT_SIGN;
     }
-    if(sign_signal.sign == 1)
+    if(sign_signal.sign == RIGHT_SIGN)
     {
-        laneStatus = 1;
+        laneStatus = RIGHT_SIGN;
     }
     // check vaild signlaneStatus
     if(sign_signal.bbox.x > (imageWidth - offsetX) && sign_signal.bbox.y < (imageHeight - offsetY))
     {
-        statusDelay = -1;
-        delayCount = 50;
+        statusDelay = DELAY;
+        delayCount = DELAY_COUNT;
     }
 
-    if(statusDelay == -1)
+    if(statusDelay == DELAY)
     {
         if(delayCount < 0)
         {
-            laneStatus = -1;
-            speed.data = 60;
-            statusDelay = 0;
+            laneStatus = NO_SIGN;
+            speed.data = INIT_SPEED;
+            statusDelay = NO_DELAY;
         }
         else 
             delayCount --;
@@ -125,17 +126,17 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     }
     if (left[i] != DetectLane::null && right[i] !=  DetectLane::null)
     {
-        if(laneStatus == 0)
+        if(laneStatus == LEFT_SIGN)
         {
             ROS_INFO("sign signal: %d",sign_signal.sign);
             error = errorAngle(left[i] + Point(laneWidth / 2, 0));
-            speed.data = 40;
+            speed.data = TURN_LEFT_SPEED;
         }
-        else if(laneStatus == 1)
+        else if(laneStatus == RIGHT_SIGN)
         {
             ROS_INFO("sign signal: %d",sign_signal.sign);
             error = errorAngle(right[i] - Point(laneWidth / 2, 0));
-            speed.data = 40; 
+            speed.data = TURN_RIGHT_SPEED; 
         }
         else
         {
@@ -155,15 +156,17 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     // Calculate error from straight line
     float straightLineError = checksTraightLine(bestLane);
     ROS_INFO("Line error: %f",straightLineError );
+
     // Get offset form straight line
-    straightLineError -= 300;
-    if(straightLineError <= 0)
-        straightLineError = 0;
-    if(straightLineError > 500)
-        straightLineError = 500;
-    if(speed.data > 40)
-        speed.data -= straightLineError/500*20;
+    straightLineError -= ERROR_OFFSET;
+    if(straightLineError <= MIN_ERROR)
+        straightLineError = MIN_ERROR;
+    if(straightLineError > MAX_ERROR)
+        straightLineError = MAX_ERROR;
+    if(speed.data > ERROR_MIN_SPEED)
+        speed.data -= straightLineError/(MAX_ERROR-MIN_ERROR)*SPEED_OFFSET;
     ROS_INFO("Speed:  %f",speed.data);
+    
     // Publish speed and angle
     angle.data = error;
 
