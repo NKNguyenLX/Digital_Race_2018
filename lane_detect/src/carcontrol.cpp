@@ -75,6 +75,7 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     int null_countLeft =0;
     int null_countRight =0;
 
+    // Calculate better lane
     for(int j=0; j < left.size();j++)
     {
         if(left[i] == DetectLane::null)
@@ -91,12 +92,16 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
         bestLane = left;
     } 
 
+    // Calculate error from straight line
+    float straightLineError = checksTraightLine(bestLane);
+    ROS_INFO("Line error: %f",straightLineError);
+
     // Lane state
-    if(sign_signal.sign == LEFT_SIGN)
+    if(sign_signal.sign == LEFT_SIGN && straightLineError > ERROR_DETECT_SIGN)
     {
         laneStatus = LEFT_SIGN;
     }
-    if(sign_signal.sign == RIGHT_SIGN)
+    if(sign_signal.sign == RIGHT_SIGN && straightLineError > ERROR_DETECT_SIGN)
     {
         laneStatus = RIGHT_SIGN;
     }
@@ -153,10 +158,6 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
         error = errorAngle(right[i] - Point(laneWidth / 2, 0));
     }
 
-    // Calculate error from straight line
-    float straightLineError = checksTraightLine(bestLane);
-    ROS_INFO("Line error: %f",straightLineError );
-
     // Get offset form straight line
     straightLineError -= ERROR_OFFSET;
     if(straightLineError <= MIN_ERROR)
@@ -166,7 +167,7 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     if(speed.data > ERROR_MIN_SPEED)
         speed.data -= straightLineError/(MAX_ERROR-MIN_ERROR)*SPEED_OFFSET;
     ROS_INFO("Speed:  %f",speed.data);
-    
+
     // Publish speed and angle
     angle.data = error;
 
