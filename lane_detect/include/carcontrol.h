@@ -30,6 +30,7 @@ public:
     ~CarControl();
     void driverCar(const vector<Point> &left, const vector<Point> &right, float velocity);
     Point getOffsetPoint(const vector<Point> &lane, const int pointNum, const int length, const int laneName);
+    float checksTraightLine(const vector<Point> &lane);
     SIGN_SIGNAL sign_signal;
     vector<float> laneEstimate;
 
@@ -55,14 +56,13 @@ private:
     int imageHeight = 240;
 
     int offsetX = 60;
-    int offsetY = 220;
+    int offsetY = 210;
 
     float turnLeft_offset = 50;
     float turnRight_offset = 0;
 
-    int turn = -1;
-    int turn_count;
-    int turn_times = -1;
+    int delayCount;
+    int statusDelay = 0;
 
     int laneStatus = -1;
     int speedStatus = -1;

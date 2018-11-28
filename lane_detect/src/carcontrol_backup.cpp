@@ -42,55 +42,26 @@ Point CarControl::getOffsetPoint(const vector<Point> &lane, const int pointNum, 
     return dst;
 }
 
-float CarControl::checksTraightLine(const vector<Point> &lane)
-{
-    Vec4f line;
-    float error = 0;
-    fitLine(lane, line, 2, 0,0.01,0.01);
-    for(int i=0;i < lane.size();i++)
-    {
-        if(lane[i] != DetectLane::null)
-        {
-            error += sqrt((line[1]*(lane[i].x - line[2]) - line[0]*(lane[i].y - line[3]))*
-                (line[1]*(lane[i].x - line[2]) - line[0]*(lane[i].y - line[3])));
-        }
-    }
-    return error;
-}
-
 void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right, float velocity)
 {
     std_msgs::Float32 angle;
     std_msgs::Float32 speed;
-    vector<Point> bestLane;
 
-    // Set initial speed
-    // speed.data = velocity;
-    speed.data = 60;
+    speed.data = velocity;
 
     int i = left.size() - 11;
     float error = preError;
-    // Check longer lane
-    int null_countLeft =0;
-    int null_countRight =0;
 
-    for(int j=0; j < left.size();j++)
-    {
-        if(left[i] == DetectLane::null)
-            null_countLeft ++;
-        if(right[i] == DetectLane::null)
-            null_countRight ++;
-    }
-    if(null_countRight < null_countLeft)
-    {
-        bestLane = right;
-    }
-    else
-    {
-        bestLane = left;
-    } 
+    // int null_countLeft =0;
+    // int null_countRight =0;
 
-    // Lane state
+    // for(int j=0; j < left.size();j++)
+    // {
+    //     if(left[i] == DetectLane::null)
+    //         null_countLeft ++;
+    //     if(right[i] == DetectLane::null)
+    //         null_countRight ++;
+    // }
     if(sign_signal.sign == 0)
     {
         laneStatus = 0;
@@ -99,7 +70,7 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
     {
         laneStatus = 1;
     }
-    // check vaild signlaneStatus
+    // check vail signlaneStatus
     if(sign_signal.bbox.x > (imageWidth - offsetX) && sign_signal.bbox.y < (imageHeight - offsetY))
     {
         statusDelay = -1;
@@ -128,45 +99,91 @@ void CarControl::driverCar(const vector<Point> &left, const vector<Point> &right
         if(laneStatus == 0)
         {
             ROS_INFO("sign signal: %d",sign_signal.sign);
+            // Point offSetPoint = getOffsetPoint(left, i, laneWidth/2, 0);
+            // error = errorAngle(offSetPoint);
             error = errorAngle(left[i] + Point(laneWidth / 2, 0));
-            speed.data = 40;
+            speed.data = 30;
         }
         else if(laneStatus == 1)
         {
             ROS_INFO("sign signal: %d",sign_signal.sign);
+            // Point offSetPoint = getOffsetPoint(right, i, laneWidth/2, 1);
+            // error = errorAngle(offSetPoint);
             error = errorAngle(right[i] - Point(laneWidth / 2, 0));
-            speed.data = 40; 
+            speed.data = 30; 
         }
         else
         {
+            // Point offSetPoint = getOffsetPoint(right, i, laneWidth/2, 1);
+            // error = errorAngle(offSetPoint);
             ROS_INFO("Tracking center");
+            // error = errorAngle((left[i] + right[i])/2);
             error = errorAngle(right[i] - Point(laneWidth / 2, 0));
         }         
     } 
     else if (left[i] != DetectLane::null)
     {
+        // Point offSetPoint = getOffsetPoint(left, i, laneWidth/2, 0);
+        // error = errorAngle(offSetPoint);
         error = errorAngle(left[i] + Point(laneWidth / 2, 0));
     }
     else
     {
+        // Point offSetPoint = getOffsetPoint(right, i, laneWidth/2, 1);
+        // error = errorAngle(offSetPoint);
         error = errorAngle(right[i] - Point(laneWidth / 2, 0));
     }
 
-    // Calculate error from straight line
-    float straightLineError = checksTraightLine(bestLane);
-    ROS_INFO("Line error: %f",straightLineError );
-    // Get offset form straight line
-    straightLineError -= 300;
-    if(straightLineError <= 0)
-        straightLineError = 0;
-    if(straightLineError > 500)
-        straightLineError = 500;
-    if(speed.data > 40)
-        speed.data -= straightLineError/500*20;
-    ROS_INFO("Speed:  %f",speed.data);
-    // Publish speed and angle
+    // if(sign_signal.bbox.x > (imageWidth - offsetX) && sign_signal.bbox.y < (imageHeight - offsetY)  && sign_signal.sign == 0)
+    // {
+    //     turn = sign_signal.sign;
+    //     turn_count = turn_times;
+    //     ROS_INFO("sign position: %f  %f", sign_signal.bbox.x, sign_signal.bbox.y );
+    // }
+    // else if(sign_signal.bbox.x > (imageWidth - offsetX) && sign_signal.bbox.y < (imageHeight - offsetY)  && sign_signal.sign == 1)
+    // {speed
+    //     turn = sign_signal.sign;
+    //     turn_count = turn_times;
+    //     ROS_INFO("sign position: %f  %f", sign_signal.bbox.x, sign_signal.bbox.y );
+    // }       
+
+    // if(turn_count > 0)
+    //     if(turn == 0)
+    //     {
+    //         error = -5;
+    //         turn_count --;
+    //     }
+    //     else if (turn == 1)
+    //     {
+    //         error += turnRight_offset;
+    //         turn_count --;
+    //     }
+    // else turn = -1;
+
+    // if(sign_signal.bbox.x > (imageWidth - offsetX) && sign_signal.bbox.y < (imageHeight - offsetY) && sign_signal.sign == 0)
+    // {
+    //     speedStatus = -1; 
+    // }
+
+    ROS_INFO("angle error: %f  ", error);
     angle.data = error;
+
+    speed.data -= error*error*1500/90/90;
+    if(speed.data <= 30) speed.data = 20;
+    ROS_INFO("speed: %f  ", speed.data);
+.
+
+        if(laneStatus == 0)
+        {
+            speed.data = 40;
+        }
+        else if(laneStatus == 1)
+        {
+            speed.data = 40; 
+        }       
+    
 
     steer_publisher.publish(angle);
     speed_publisher.publish(speed);    
 } 
+
